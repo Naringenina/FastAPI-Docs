@@ -114,7 +114,7 @@ async def read_user_item(
     item = {"item_id": item_id, "needy": needy, "skip": skip, "limit": limit}
 
 """Lo que hacemos acá es definir una estructura y tipos de datos que esperamos, colocar campos obligatorios y opcionales, para devolvernos un objeto en python tipado, es decir los datos que espera el cliente o que nosotros le vamos a dar"""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 class Item(BaseModel):
     name: str
@@ -160,3 +160,104 @@ class Item(BaseModel):
 async def update_item(item_id: int, item:Annotated[Item, Body(embed= True)]):
     results = {"item_id": item_id, "item": item}
     return results
+
+"""En BaseMNodel tambien se pueden agregar listas en los tipos de datos que se esperan gracias a pydantic, de dos formas, especificando los tipos internos de la lista o sin especificar, si queremos que sean unicos los valores en vez de colocar [] colocamos set()"""
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: list = []
+    tags_2 = list[str] = []
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+"""Yo puedo poner un modelo Pydantic dentro de otro modelo de la siguiente forma, es decir definir un modelo pydantic y luego usar ese mismo modelo para ponerlo dentro de un dato como tipo que tiene que ser ese dato"""
+
+class Image(BaseModel):
+    url: str
+    name: str
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: set[str] = set()
+    image: Image | None = None #Se utilizó un modelo Pydantic dentro de otro modelo pydantic, es decir esta variable será un diccionario dentro de otro diccionario
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+"""Tambien se pueden utilizar tipos de datos más complejos para los modelos Pydantic, pero esto se tienen que revisar para verificar su uso, como en el siguiente ejemplo, en vez de utilizar, str como en el ejemplo pasado usamos HttpUrl de Pydantic(Se tienen que importar)"""
+
+class Image(BaseModel):
+    url: HttpUrl
+    name: str
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: set[str] = set()
+    image: Image | None = None
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+"""Tambien se pueden usar los modelos pydantic como subtippos de listas y sets, como el siguiente ejemplo"""
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+    tags: set[str] = set()
+    images: list[Image] | None = None
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+"Se pueden definir arbitrariamente profundos modelos anidados"
+
+class Offer(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    items: list[Item]
+
+
+@app.post("/offers/")
+async def create_offer(offer: Offer):
+    return offer
+
+"Se permiten recibir directamente una lista en el body del request, es decir una lista de dicccionarios, o un array, siempre se va a tener soporte de VsCode, algo que es increible, debido a que ni siquiera trabajando con diccionarios de python directamente se obtiene este soporte"
+
+@app.post("/images/multiple/")
+async def create_multiple_images(images: list[Image]):
+    return images
+
+"Tambien se pueden recibir bodys, sin que estos sean necesariamente modelos de pydantic si no diccionarios clasicos de python, tener en cuenta que pydantic solo recibe str como llaves de diccionario, esto significa que por más que el usuario mande interos como llaves pydantic los convertería en str, en el siguiente ejemplo no se están pidiendo modelos pydantic dentro de la función"
+
+@app.post("/index-weights/")
+async def create_index_weights(weights: dict[int, float]): #En este caso se recibirán diccionarios con llaves enteras y valores tipo float
+    return weights
+
+"""Solo estoy verificando el git hub xd"""
