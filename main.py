@@ -146,7 +146,7 @@ async def update_item(item_id: int, item: Item, q: str | None = None):
 
 """Tambien se pueden declarar validaciones y metadatos dentro de los modelos de pydantic de la siguiente manera, metadatos no son datos de meta, la empresa, se tienen que importar Body de la libreria FastAPI y Field de pydantic"""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 class Item(BaseModel):
     name: str
@@ -260,4 +260,32 @@ async def create_multiple_images(images: list[Image]):
 async def create_index_weights(weights: dict[int, float]): #En este caso se recibirán diccionarios con llaves enteras y valores tipo float
     return weights
 
-"""Solo estoy verificando el git hub xd"""
+"Tambien podemos fijar que es lo que queremos devolver en le función con '->' en la función de la siguiente forma, vamos a seguir teniendo en cuenta los modelos de Pydantic definidos anteriormente"
+
+@app.post("/items/")
+async def create_item(item: Item) -> Item: #Acá cuando utilicemos el post nos devolvera un modelo Pydantic "Item"
+    return item
+
+
+@app.get("/items/")
+async def read_items() -> list[Item]: #Acá nos devolvera una lista de modelos Pydantic "ITem"
+    return [
+        Item(name="Portal Gun", price=42.0),
+        Item(name="Plumbus", price=32.0),
+    ]
+
+"En algunos casos vas a querer regresar algunos datos que no son exactamente el tipo de datos que declaramos en la función, por ejemplo voy a querer devolver un diccionario en vez de un modelo pydantic, en esos casos podemos usar 'the path operation decorator parameter response_model' en vez de tipo de retorno o '->' de la siguiente forma, Any es importado de la libreria typing"
+
+@app.post("/items/", response_model=Item)
+async def create_item(item: Item) -> Any:
+    return item
+
+
+@app.get("/items/", response_model=list[Item])
+async def read_items() -> Any:
+    return [
+        {"name": "Portal Gun", "price": 42.0},
+        {"name": "Plumbus", "price": 32.0},
+    ]
+#Esto siempre va a devolverle un modelo pydantic o lo que se declare en el decorador si soy cliente, lo que esto permite es ser más flexible como función para el desarrollador, en este caso -> Any no es necesarío pero quiere decir que se la función puede devolve cualquier tipo de datos 
+
